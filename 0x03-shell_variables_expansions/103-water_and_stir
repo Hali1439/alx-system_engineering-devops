@@ -1,2 +1,2 @@
 #!/bin/bash
-n=$((10#$(echo $WATER | tr water 01234)+10#$(echo $STIR | tr ti.rs 01234)))$'\n' r=b d=bestchol;while [ $n -gt 0 ];do r=${d:n%8:1}$r; n=$((n/8));done;[ "$r" ] && echo "$r" || echo b
+echo $(( $(echo "$WATER" | tr 'ewatr' 01234) + $(echo "$STIR" | tr 'ti.r' 0123) )) | tr 0123456789 'bestchol'
