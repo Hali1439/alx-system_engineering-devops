@@ -1,0 +1,169 @@
+1. Overview
+We’re hosting www.foobar.com on a three-server web infrastructure, designed for better security, encrypted traffic, and real-time monitoring.
+It builds upon the previous distributed web infrastructure by adding firewalls, SSL/TLS encryption, and monitoring tools.
+
+2. Components
+1. Load Balancer (HAProxy)
+Role: Distributes incoming traffic evenly to multiple backend servers.
+
+Why it's here: Prevents any one server from getting overloaded and provides redundancy.
+
+Setup type: Active-Active — both backend servers handle traffic at the same time.
+
+Algorithm: Often Round Robin or Least Connections.
+
+SSL Termination: Decrypts HTTPS traffic before passing it to backend servers (but this has a trade-off, explained later).
+
+2. Web & Application Servers
+Two servers, each running:
+
+Nginx (Web Server) → Serves static content, handles requests.
+
+Application Server (e.g., Gunicorn, uWSGI) → Executes dynamic code.
+
+Application files/codebase → Same version deployed on both servers.
+
+Why: Redundancy and load distribution.
+
+3. Database Cluster (MySQL)
+Primary (Master): Accepts write and read operations.
+
+Replica (Slave): Accepts read-only queries.
+
+Why: Improves performance and provides a backup in case the Primary fails.
+
+Replication type: Asynchronous (updates to Replica may be slightly delayed).
+
+4. Firewalls (3 total)
+Why: Protect each network segment from unauthorized access.
+
+Placement:
+
+Between Internet and Load Balancer → Blocks malicious traffic before it reaches LB.
+
+Between Load Balancer and Web/Application Servers → Only allows HTTP/HTTPS from LB.
+
+Between Application Servers and Database → Only allows database queries from trusted app servers.
+
+5. SSL Certificate
+Why: Encrypts data between the user’s browser and the infrastructure.
+
+How: Ensures all traffic to www.foobar.com uses HTTPS.
+
+Prevents:
+
+Data interception (Man-in-the-Middle attacks)
+
+Credential theft
+
+Implementation: Installed on the Load Balancer for SSL termination.
+
+6. Monitoring Clients
+Why: Detect failures, bottlenecks, and performance issues early.
+
+How:
+
+Installed on each server.
+
+Collects metrics (CPU usage, memory usage, QPS, response times, error rates).
+
+Sends data to central monitoring service (e.g., Sumologic, Datadog, Prometheus).
+
+QPS Monitoring:
+
+Track requests per second (QPS) using logs or LB stats.
+
+Use monitoring alerts if QPS spikes abnormally.
+
+3. How It Works (Step-by-Step Request Flow)
+User enters https://www.foobar.com.
+
+Browser looks up DNS record (A record for www.foobar.com → IP of Load Balancer).
+
+Request hits Firewall 1 (Internet → LB).
+
+Load Balancer decrypts SSL, chooses a backend server using load-balancing algorithm.
+
+Request passes Firewall 2 (LB → Web/App servers).
+
+Web Server (Nginx) serves static files or forwards to Application Server.
+
+Application Server queries the Database if needed.
+
+Request passes Firewall 3 (App servers → Database).
+
+Database sends data back to the application → web server → load balancer → user (encrypted again if SSL is re-applied before sending back).
+
+4. Benefits
+Security:
+
+Firewalls block unauthorized access.
+
+HTTPS encrypts data.
+
+Scalability:
+
+Load Balancer supports adding more backend servers.
+
+Monitoring:
+
+Quick detection of failures and performance issues.
+
+5. Issues
+SSL Termination at Load Balancer
+
+Traffic between LB and backend servers is unencrypted unless you enable end-to-end SSL.
+
+Could be a problem in untrusted networks.
+
+Single MySQL Primary Write Node
+
+If Primary fails, writes stop until failover.
+
+Identical Servers with All Roles
+
+If all servers have the same stack and a security breach occurs, an attacker may gain access to all components.
+Issues with This Infrastructure
+☠️ 1. Single Points of Failure (SPOF)
+Even though the system has redundancy in some areas, there are still weak links:
+
+Load Balancer – If it fails, the entire site goes down because all traffic depends on it.
+
+Primary Database – Only one MySQL node accepts writes. If it fails, no new data can be added until failover.
+
+Monitoring Service Dependency – If the monitoring tool is cloud-based and its agent fails or loses connection, you might miss alerts.
+
+🔓 2. Security Gaps
+SSL Termination at Load Balancer – Traffic between the Load Balancer and backend servers is unencrypted unless you set up end-to-end SSL.
+
+Identical Full-Stack Servers – If each server runs both the web app and other services without separation, a compromise on one could give attackers access to multiple layers.
+
+Potential Firewall Misconfiguration – One bad firewall rule could accidentally open sensitive ports to the public.
+
+🛑 3. Database Limitations
+Write Bottleneck – Only the Primary handles writes, creating a potential performance bottleneck.
+
+Replication Lag – In Primary–Replica setups, replicas may be slightly behind, causing stale reads.
+
+Failover Complexity – Switching to a Replica as Primary requires manual or automated intervention, which takes time and may cause downtime.
+
+📊 4. Monitoring Blind Spots
+Agent Failures – If a monitoring client crashes, metrics from that server stop being collected.
+
+No Synthetic Monitoring – Monitoring might track server health but not simulate real user interactions.
+
+Delayed Alerts – Some monitoring tools batch alerts, causing slow response to urgent issues.
+
+💥 5. Scaling Challenges
+Database Scaling – Adding more replicas helps reads, but write scalability still depends on one node.
+
+Load Balancer Limits – One load balancer may eventually become overloaded if traffic spikes massively.
+
+Vertical Scaling Risk – If you only scale by upgrading servers instead of adding more, costs and risks increase.
+
+⚠️ 6. Operational Risks
+No Disaster Recovery Plan – Backups aren’t mentioned; if data corruption happens, recovery could be slow or impossible.
+
+Maintenance Downtime – Taking down the Primary DB or LB for maintenance affects the whole site.
+
+No Auto-Healing – If a server fails, there’s no system in place to replace it automatically.
