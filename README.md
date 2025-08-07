@@ -1,6 +1,7 @@
 # ALX-SYSTEM\_ENGINEERING-DEVOPS
 
 ## Table contents
+- [0x03-shell_variables_expansion](0x03-shell_variables_expansions)
 
 This repository contains two related deliverables for the ALX System Engineering & DevOps course:
 
