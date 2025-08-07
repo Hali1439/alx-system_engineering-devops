@@ -1,0 +1,80 @@
+3. Scale-Up Web Infrastructure
+This setup aims to handle more traffic, increase resilience, and improve performance by splitting the web server, application server, and database onto separate dedicated machines, while ensuring the load balancer is not a single point of failure.
+
+Infrastructure Overview
+Goal:
+To increase scalability and reliability, while reducing performance bottlenecks by isolating core components.
+
+Diagram Layout (Conceptual):
+
+pgsql
+Copy
+Edit
+User → DNS (www.foobar.com) → Load Balancer Cluster (2 HAProxy) → Web Servers → App Servers → Database Cluster (Primary + Replica)
+Added Components & Why
+Extra Load Balancer (HAProxy) – Cluster Mode
+
+Why: Removes the load balancer as a single point of failure.
+
+How: Both load balancers are in Active-Active or Active-Passive mode with heartbeat/failover configured.
+
+Benefit: If one load balancer fails, the other instantly takes over, maintaining uptime.
+
+Dedicated Web Server(s)
+
+Why: Separating the web server (Nginx/Apache) from the application server allows for better scaling and resource allocation.
+
+Role:
+
+Handles static content (HTML, CSS, JS, images).
+
+Manages HTTP/HTTPS requests and forwards dynamic requests to the application server.
+
+Dedicated Application Server(s)
+
+Why: Keeps dynamic request processing (business logic, API calls, data handling) separate from static content delivery.
+
+Role:
+
+Runs the backend code (e.g., Python/Django, PHP/Laravel, Node.js).
+
+Communicates with the database for dynamic content.
+
+Dedicated Database Server(s)
+
+Why: Keeps storage and query processing separate from application logic.
+
+Setup: Primary-Replica cluster for redundancy and read scaling.
+
+Role:
+
+Primary: Handles writes and critical transactions.
+
+Replica: Handles read queries and acts as backup for failover.
+
+How the Traffic Flows
+User request → DNS resolves www.foobar.com to the load balancer IP.
+
+Load Balancer Cluster → Distributes incoming requests based on a load-balancing algorithm (e.g., round-robin, least connections).
+
+Web Servers → Serve static content directly or pass dynamic requests to the application servers.
+
+Application Servers → Process dynamic content, run business logic, fetch/update data from the database.
+
+Database Servers → Return data to the application server, which sends the response back to the web server, and finally to the user.
+
+Application Server vs Web Server
+Feature	Web Server (Nginx/Apache)	Application Server (Gunicorn, uWSGI, Node.js, etc.)
+Handles	Static content & HTTP requests	Dynamic content & business logic
+Examples	Nginx, Apache	Gunicorn, Passenger, uWSGI, Node.js
+Scalability	Easy horizontal scaling	Requires careful scaling (stateful operations)
+Role in stack	Entry point for client requests	Executes backend code, APIs, and data processing
+
+Benefits of This Scale-Up Setup
+Better Resource Management: Each server type can be tuned and scaled independently.
+
+Improved Reliability: Load balancer cluster avoids SPOF.
+
+Performance Boost: Web servers focus on static content; app servers focus on computation; DB servers focus on queries.
+
+Easier Maintenance: Updates or restarts for one layer won’t necessarily impact the others.
