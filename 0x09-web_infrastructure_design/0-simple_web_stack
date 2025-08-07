@@ -1,0 +1,63 @@
+Simple Web Stack Design — One Server
+💡 Scenario
+A user opens their browser and types:
+www.foobar.com
+
+This request reaches a single server (IP: 8.8.8.8) that hosts a LAMP-like stack using Nginx, PHP, and MySQL.
+
+
+🧠 Explanation of Each Component
+🔧 What is a server?
+A physical or virtual machine that runs services or applications (in this case, Nginx, PHP, MySQL).
+
+It listens for incoming requests (e.g., HTTP) and responds accordingly.
+
+🌐 What is the domain name?
+foobar.com is a human-readable alias for the server’s IP address.
+
+Helps users avoid remembering IPs like 8.8.8.8.
+
+🧾 What type of DNS record is www.foobar.com?
+A Record — Maps the hostname www.foobar.com to the IP 8.8.8.8.
+
+🌍 What is the role of the web server (Nginx)?
+Listens on ports 80 (HTTP) or 443 (HTTPS).
+
+Handles static files (HTML, CSS, JS).
+
+Forwards dynamic requests (e.g., PHP) to the application server.
+
+⚙️ What is the role of the application server (PHP)?
+Executes dynamic code (e.g., login, search).
+
+Processes user input and generates HTML pages dynamically.
+
+Often implemented via PHP-FPM when using Nginx.
+
+🗄️ What is the role of the database (MySQL)?
+Stores persistent data: users, products, comments, etc.
+
+App server connects to the DB via SQL to fetch/store data.
+
+🔗 How does the server communicate with the user's computer?
+Through the HTTP or HTTPS protocol over the Internet.
+
+Request/response is made via TCP/IP stack using port 80/443.
+
+⚠️ Issues with This Infrastructure
+☠️ SPOF (Single Point of Failure)
+If the one server goes down, the entire website becomes unavailable.
+
+There's no redundancy or failover.
+
+⚠️ Downtime During Maintenance
+Updating the codebase or restarting services (e.g., Nginx) takes the site offline temporarily.
+
+No zero-downtime deployment possible in this setup.
+
+🚫 Cannot Handle High Traffic
+Limited scalability: One server has finite CPU/RAM.
+
+If traffic spikes, the server may slow down or crash.
+
+No load balancing, no horizontal scaling.
