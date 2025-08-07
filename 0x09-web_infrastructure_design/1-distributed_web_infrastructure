@@ -1,0 +1,113 @@
+Three-Server Distributed Web Infrastructure
+💡 Scenario
+You’re designing an infrastructure where multiple servers work together to:
+
+Distribute load
+
+Improve availability
+
+Reduce risk of downtime
+
+This design supports the website:
+www.foobar.com
+
+🖥️ Infrastructure Components
+Component	Description
+🧭 Domain: www.foobar.com	Human-friendly address
+📦 Load Balancer (HAProxy)	Distributes incoming traffic
+🖥️ Server 1	Nginx + App Server
+🖥️ Server 2	App Server + Codebase
+🗄️ MySQL Database	Primary + Replica setup
+
+📌 Component-by-Component Explanation
+1. 🌐 Domain Name
+www.foobar.com is mapped via DNS to the public IP of the load balancer.
+
+The A record (or possibly CNAME) resolves www to the load balancer.
+
+2. ⚖️ Load Balancer (HAProxy)
+Handles all incoming traffic from the users.
+
+Distributes requests to backend servers using a load balancing algorithm.
+
+Configured for:
+
+Round-robin algorithm:
+
+Sends each new request to the next server in a circular fashion.
+
+Helps balance traffic evenly.
+
+Active-Active Setup:
+
+Both servers are online and handle traffic simultaneously.
+
+Maximizes resource usage and availability.
+
+🔄 Active-Active vs. Active-Passive
+Type	Description
+Active-Active	All backend servers are active and serve traffic
+Active-Passive	One server is active, others stay idle until needed (failover)
+
+3. 🖥️ Backend Servers
+Server 1
+Runs:
+
+Nginx (Web Server) → Handles HTTP requests
+
+App Server (e.g., PHP, Node.js) → Processes logic
+
+Server 2
+Runs:
+
+App Server
+
+Your codebase (frontend/backend files)
+
+Both servers are connected to the database cluster and may read/write data, depending on the database configuration.
+
+4. 🗄️ MySQL Database: Master-Slave (Primary-Replica)
+Node	Role
+Primary (Master)	Handles all writes and most reads
+Replica (Slave)	Handles read-only queries; synchronizes with primary
+
+How it works:
+
+All INSERT/UPDATE/DELETE go to the Primary node.
+
+Replica receives those changes asynchronously via replication.
+
+Application can query replica for reads to reduce load on primary.
+
+⚠️ Issues with This Infrastructure
+☠️ Single Points of Failure (SPOF)
+Load Balancer: If it fails, no traffic reaches the backend servers.
+
+Database Primary: If it fails, no writes can occur.
+
+✅ Solution Ideas:
+Add a redundant load balancer (e.g., keepalived + VRRP)
+
+Use automatic failover for the database (e.g., MySQL Group Replication, ProxySQL)
+
+🔐 Security Issues
+Issue	Description
+No Firewall	Nothing blocks malicious traffic
+No HTTPS	Communication is not encrypted — vulnerable to MITM attacks
+
+✅ Solutions:
+Add firewalls to control access to servers (e.g., only allow ports 80/443/3306)
+
+Use Let's Encrypt or SSL certificates with Nginx/HAProxy for HTTPS
+
+🚨 No Monitoring
+If something fails (server crash, slow DB), you won’t know.
+
+✅ Solutions:
+Implement monitoring tools:
+
+Prometheus + Grafana (metrics)
+
+Nagios (alerts)
+
+ELK stack (logs)
